@@ -17,7 +17,7 @@ export default function ItemDetail({ params }) {
 
   const fetchItem = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/items/${id}`);
+      const res = await fetch(`http://http://44.200.227.55:5000/api/items/${id}`);
       const data = await res.json();
       setItem(data);
     } catch (err) {
@@ -28,7 +28,7 @@ export default function ItemDetail({ params }) {
 
   const fetchBookedDates = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/bookings/item/${id}`);
+      const res = await fetch(`http://http://44.200.227.55:5000/api/bookings/item/${id}`);
       const data = await res.json();
       const dates = [];
       if (Array.isArray(data)) {
@@ -77,7 +77,7 @@ export default function ItemDetail({ params }) {
     setBooking(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:5000/api/bookings', {
+      const res = await fetch('http://http://44.200.227.55:5000/api/bookings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -13,7 +13,7 @@ export default function MyBookings() {
         window.location.href = '/auth/login';
         return;
       }
-      const res = await fetch('http://localhost:5000/api/bookings/my', {
+      const res = await fetch('http://http://44.200.227.55:5000/api/bookings/my', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -32,7 +32,7 @@ export default function MyBookings() {
     if (!confirm('Are you sure you want to cancel this booking?')) return;
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:5000/api/bookings/${id}`, {
+      await fetch(`http://http://44.200.227.55:5000/api/bookings/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -50,7 +50,7 @@ export default function MyBookings() {
     if (!confirm('Are you sure you want to delete this booking?')) return;
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:5000/api/bookings/${id}`, {
+      await fetch(`http://http://44.200.227.55:5000/api/bookings/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

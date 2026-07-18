@@ -8,10 +8,11 @@ export default function Items() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [currentImgIndex, setCurrentImgIndex] = useState({});
-
+ 
+   useEffect(() => {
   const fetchItems = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/items');
+      const res = await fetch('http://http://44.200.227.55:5000/api/items');
       const data = await res.json();
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -20,14 +21,12 @@ export default function Items() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchItems();
-  }, []);
-
+  fetchItems();
+}, []);
   const getImgSrc = (src) => {
     return src.startsWith('data:') ? src : `data:image/jpeg;base64,${src}`;
   };
-
+  
   const prevImg = (itemId, totalImages) => {
     setCurrentImgIndex(prev => ({
       ...prev,

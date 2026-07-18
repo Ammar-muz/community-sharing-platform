@@ -11,7 +11,7 @@ export default function Items() {
   useEffect(() => {
   const fetchItems = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/items');
+      const res = await fetch('http://http://44.200.227.55:5000/api/items');
       const data = await res.json();
       setItems(data);
     } catch (err) {
@@ -25,7 +25,7 @@ export default function Items() {
 
   const fetchItems = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/items');
+      const res = await fetch('http://http://44.200.227.55:5000/api/items');
       const data = await res.json();
       setItems(data);
     } catch (err) {
