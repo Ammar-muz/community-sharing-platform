@@ -15,10 +15,10 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/items', require('./routes/items'));
 app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/admin', require('./routes/admin'));
-app.use('/api/Messages', require('./routes/Messages'));
+app.use('/api/messages', require('./routes/messages'));
 
 // Test route
-app.get('/', (req, res) => {
+app.get('/', (req, res) => {N
   res.send('Community Sharing Platform API is running!');
 });
 
