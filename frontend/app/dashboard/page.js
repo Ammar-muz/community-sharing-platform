@@ -13,7 +13,11 @@ function DashboardMessages({ currentUser }) {
   const fetchConversations = async () => {
     try {
       const token = localStorage.getItem('token');
+<<<<<<< HEAD
       const res = await fetch('http://http://44.200.227.55:5000/api/messages/conversations', {
+=======
+      const res = await fetch('http://44.200.227.55:5000/api/messages/conversations', {
+>>>>>>> c834f3a (Updated project after deployment fixes)
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -43,7 +47,11 @@ function DashboardMessages({ currentUser }) {
   const fetchMessages = async (userId) => {
     try {
       const token = localStorage.getItem('token');
+<<<<<<< HEAD
       const res = await fetch(`http://http://44.200.227.55:5000/api/messages/${userId}`, {
+=======
+      const res = await fetch(`http://44.200.227.55:5000/api/messages/${userId}`, {
+>>>>>>> c834f3a (Updated project after deployment fixes)
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -58,7 +66,11 @@ function DashboardMessages({ currentUser }) {
     if (!newMessage.trim() || !selectedUser) return;
     try {
       const token = localStorage.getItem('token');
+<<<<<<< HEAD
       const res = await fetch('http://http://44.200.227.55:5000/api/messages', {
+=======
+      const res = await fetch('http://44.200.227.55:5000/api/messages', {
+>>>>>>> c834f3a (Updated project after deployment fixes)
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ receiverId: selectedUser._id, message: newMessage.trim() })
@@ -221,7 +233,11 @@ export default function Dashboard() {
   const fetchMyItems = async () => {
     try {
       const token = localStorage.getItem('token');
+<<<<<<< HEAD
       const res = await fetch('http://http://44.200.227.55:5000/api/items', {
+=======
+      const res = await fetch('http://44.200.227.55:5000/api/items', {
+>>>>>>> c834f3a (Updated project after deployment fixes)
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -235,7 +251,11 @@ export default function Dashboard() {
   const fetchMyBookings = async () => {
     try {
       const token = localStorage.getItem('token');
+<<<<<<< HEAD
       const res = await fetch('http://http://44.200.227.55:5000/api/bookings/owner', {
+=======
+      const res = await fetch('http://44.200.227.55:5000/api/bookings/owner', {
+>>>>>>> c834f3a (Updated project after deployment fixes)
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -309,7 +329,11 @@ export default function Dashboard() {
     try {
       const token = localStorage.getItem('token');
       const imageBase64s = imagePreviews;
+<<<<<<< HEAD
       const res = await fetch('http://http://44.200.227.55:5000/api/items', {
+=======
+      const res = await fetch('http://44.200.227.55:5000/api/items', {
+>>>>>>> c834f3a (Updated project after deployment fixes)
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ ...newItem, images: imageBase64s })
@@ -344,7 +368,11 @@ export default function Dashboard() {
         location: newItem.location,
       };
       if (imageBase64s.length > 0) updateData.images = imageBase64s;
+<<<<<<< HEAD
       const res = await fetch(`http://http://44.200.227.55:5000/api/items/${newItem.editId}`, {
+=======
+      const res = await fetch(`http://44.200.227.55:5000/api/items/${newItem.editId}`, {
+>>>>>>> c834f3a (Updated project after deployment fixes)
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(updateData)
@@ -369,7 +397,11 @@ export default function Dashboard() {
     if (!confirm('Are you sure you want to delete this item?')) return;
     try {
       const token = localStorage.getItem('token');
+<<<<<<< HEAD
       await fetch(`http://http://44.200.227.55:5000/api/items/${id}`, {
+=======
+      await fetch(`http://44.200.227.55:5000/api/items/${id}`, {
+>>>>>>> c834f3a (Updated project after deployment fixes)
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -382,7 +414,11 @@ export default function Dashboard() {
   const handleBookingStatus = async (id, status) => {
     try {
       const token = localStorage.getItem('token');
+<<<<<<< HEAD
       await fetch(`http://http://44.200.227.55:5000/api/bookings/${id}`, {
+=======
+      await fetch(`http://44.200.227.55:5000/api/bookings/${id}`, {
+>>>>>>> c834f3a (Updated project after deployment fixes)
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ status })

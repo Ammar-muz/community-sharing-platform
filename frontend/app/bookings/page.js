@@ -13,7 +13,11 @@ export default function MyBookings() {
         window.location.href = '/auth/login';
         return;
       }
+<<<<<<< HEAD
       const res = await fetch('http://http://44.200.227.55:5000/api/bookings/my', {
+=======
+      const res = await fetch('http://44.200.227.55:5000/api/bookings/my', {
+>>>>>>> c834f3a (Updated project after deployment fixes)
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -32,7 +36,11 @@ export default function MyBookings() {
     if (!confirm('Are you sure you want to cancel this booking?')) return;
     try {
       const token = localStorage.getItem('token');
+<<<<<<< HEAD
       await fetch(`http://http://44.200.227.55:5000/api/bookings/${id}`, {
+=======
+      await fetch(`http://44.200.227.55:5000/api/bookings/${id}`, {
+>>>>>>> c834f3a (Updated project after deployment fixes)
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -50,7 +58,11 @@ export default function MyBookings() {
     if (!confirm('Are you sure you want to delete this booking?')) return;
     try {
       const token = localStorage.getItem('token');
+<<<<<<< HEAD
       await fetch(`http://http://44.200.227.55:5000/api/bookings/${id}`, {
+=======
+      await fetch(`http://44.200.227.55:5000/api/bookings/${id}`, {
+>>>>>>> c834f3a (Updated project after deployment fixes)
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

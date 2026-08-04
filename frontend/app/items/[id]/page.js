@@ -17,7 +17,11 @@ export default function ItemDetail({ params }) {
 
   const fetchItem = async () => {
     try {
+<<<<<<< HEAD
       const res = await fetch(`http://http://44.200.227.55:5000/api/items/${id}`);
+=======
+      const res = await fetch(`http://44.200.227.55:5000/api/items/${id}`);
+>>>>>>> c834f3a (Updated project after deployment fixes)
       const data = await res.json();
       setItem(data);
     } catch (err) {
@@ -28,7 +32,11 @@ export default function ItemDetail({ params }) {
 
   const fetchBookedDates = async () => {
     try {
+<<<<<<< HEAD
       const res = await fetch(`http://http://44.200.227.55:5000/api/bookings/item/${id}`);
+=======
+      const res = await fetch(`http://44.200.227.55:5000/api/bookings/item/${id}`);
+>>>>>>> c834f3a (Updated project after deployment fixes)
       const data = await res.json();
       const dates = [];
       if (Array.isArray(data)) {
@@ -77,7 +85,11 @@ export default function ItemDetail({ params }) {
     setBooking(true);
     setError('');
     try {
+<<<<<<< HEAD
       const res = await fetch('http://http://44.200.227.55:5000/api/bookings', {
+=======
+      const res = await fetch('http://44.200.227.55:5000/api/bookings', {
+>>>>>>> c834f3a (Updated project after deployment fixes)
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

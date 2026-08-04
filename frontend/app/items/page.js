@@ -11,7 +11,11 @@ export default function Items() {
   useEffect(() => {
   const fetchItems = async () => {
     try {
+<<<<<<< HEAD
       const res = await fetch('http://http://44.200.227.55:5000/api/items');
+=======
+      const res = await fetch('http://44.200.227.55:5000/api/items');
+>>>>>>> c834f3a (Updated project after deployment fixes)
       const data = await res.json();
       setItems(data);
     } catch (err) {
@@ -25,7 +29,11 @@ export default function Items() {
 
   const fetchItems = async () => {
     try {
+<<<<<<< HEAD
       const res = await fetch('http://http://44.200.227.55:5000/api/items');
+=======
+      const res = await fetch('http://44.200.227.55:5000/api/items');
+>>>>>>> c834f3a (Updated project after deployment fixes)
       const data = await res.json();
       setItems(data);
     } catch (err) {
