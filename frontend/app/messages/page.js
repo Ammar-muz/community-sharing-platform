@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+const API = process.env.NEXT_PUBLIC_API_URL;
 
 function MessagesContent() {  
   const [conversations, setConversations] = useState([]);
@@ -23,7 +24,7 @@ function MessagesContent() {
   const fetchConversations = async (user) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://44.200.227.55:5000/api/messages/conversations', {
+      const res = await fetch(`${API}/api/messages/conversations`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -56,7 +57,7 @@ function MessagesContent() {
   const fetchMessages = async (userId) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://44.200.227.55:5000/api/messages/${userId}`, {
+      const res = await fetch(`${API}/api/messages/${userId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -76,7 +77,7 @@ function MessagesContent() {
       window.location.href = '/auth/login';
       return;
     }
-    const res = await fetch('http://44.200.227.55:5000/api/messages', {
+    const res = await fetch(`${API}/api/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

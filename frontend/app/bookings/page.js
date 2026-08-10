@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+const API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -13,11 +14,7 @@ export default function MyBookings() {
         window.location.href = '/auth/login';
         return;
       }
-<<<<<<< HEAD
-      const res = await fetch('http://http://44.200.227.55:5000/api/bookings/my', {
-=======
-      const res = await fetch('http://44.200.227.55:5000/api/bookings/my', {
->>>>>>> c834f3a (Updated project after deployment fixes)
+      const res = await fetch(`${API}/api/bookings/my`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -36,11 +33,7 @@ export default function MyBookings() {
     if (!confirm('Are you sure you want to cancel this booking?')) return;
     try {
       const token = localStorage.getItem('token');
-<<<<<<< HEAD
-      await fetch(`http://http://44.200.227.55:5000/api/bookings/${id}`, {
-=======
-      await fetch(`http://44.200.227.55:5000/api/bookings/${id}`, {
->>>>>>> c834f3a (Updated project after deployment fixes)
+      await fetch(`${API}/api/bookings/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -58,11 +51,7 @@ export default function MyBookings() {
     if (!confirm('Are you sure you want to delete this booking?')) return;
     try {
       const token = localStorage.getItem('token');
-<<<<<<< HEAD
-      await fetch(`http://http://44.200.227.55:5000/api/bookings/${id}`, {
-=======
-      await fetch(`http://44.200.227.55:5000/api/bookings/${id}`, {
->>>>>>> c834f3a (Updated project after deployment fixes)
+      await fetch(`${API}/api/bookings/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

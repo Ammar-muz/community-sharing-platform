@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+const API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -21,15 +22,9 @@ useEffect(() => {
     const fetchAll = async () => {
       try {
         const [usersRes, itemsRes, bookingsRes] = await Promise.all([
-<<<<<<< HEAD
-          fetch('http://http://44.200.227.55:5000/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('http://http://44.200.227.55:5000/api/admin/items', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('http://http://44.200.227.55:5000/api/admin/bookings', { headers: { 'Authorization': `Bearer ${token}` } }),
-=======
-          fetch('http://44.200.227.55:5000/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('http://44.200.227.55:5000/api/admin/items', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('http://44.200.227.55:5000/api/admin/bookings', { headers: { 'Authorization': `Bearer ${token}` } }),
->>>>>>> c834f3a (Updated project after deployment fixes)
+          fetch(`${API}/api/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${API}/api/admin/items`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${API}/api/admin/bookings`, { headers: { 'Authorization': `Bearer ${token}` } }),
         ]);
         const usersData = await usersRes.json();
         const itemsData = await itemsRes.json();
@@ -47,11 +42,7 @@ useEffect(() => {
   const handleDeleteItem = async (id) => {
     if (!confirm('Are you sure?')) return;
     const token = localStorage.getItem('token');
-<<<<<<< HEAD
-    await fetch(`http://http://44.200.227.55:5000/api/admin/items/${id}`, {
-=======
-    await fetch(`http://44.200.227.55:5000/api/admin/items/${id}`, {
->>>>>>> c834f3a (Updated project after deployment fixes)
+    await fetch(`${API}/api/admin/items/${id}`, {
       method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
     });
     setItems(prev => prev.filter(i => i._id !== id));
@@ -60,11 +51,7 @@ useEffect(() => {
   const handleDeleteUser = async (id) => {
     if (!confirm('Are you sure?')) return;
     const token = localStorage.getItem('token');
-<<<<<<< HEAD
-    await fetch(`http://http://44.200.227.55:5000/api/admin/users/${id}`, {
-=======
-    await fetch(`http://44.200.227.55:5000/api/admin/users/${id}`, {
->>>>>>> c834f3a (Updated project after deployment fixes)
+    await fetch(`${API}/api/admin/users/${id}`, {
       method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
     });
     setUsers(prev => prev.filter(u => u._id !== id));

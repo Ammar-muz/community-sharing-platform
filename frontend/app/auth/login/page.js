@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+const API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -12,11 +13,7 @@ export default function Login() {
     setLoading(true);
     setError('');
     try {
-<<<<<<< HEAD
-      const res = await fetch('http://http://44.200.227.55:5000/api/auth/login', {
-=======
-      const res = await fetch('http://44.200.227.55:5000/api/auth/login', {
->>>>>>> c834f3a (Updated project after deployment fixes)
+      const res = await fetch(`${API}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
