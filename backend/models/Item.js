@@ -13,4 +13,19 @@ const itemSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+// UPDATE BLOCKED DATES
+router.put('/:id/blocked-dates', auth, async (req, res) => {
+  try {
+    const { blockedDates } = req.body;
+    const item = await Item.findByIdAndUpdate(
+      req.params.id,
+      { blockedDates },
+      { new: true }
+    );
+    res.json(item);
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
 module.exports = mongoose.model('Item', itemSchema);
