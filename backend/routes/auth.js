@@ -12,12 +12,14 @@ router.post('/register', async (req, res) => {
     const exists = await User.findOne({ email });
     if (exists) return res.status(400).json({ msg: 'User already exists' });
     
+    const allowedRoles = ['user', 'owner'];
+    const finalRole = allowedRoles.includes(role) ? role : 'user';
     const hashed = await bcrypt.hash(password, 10);
-    const user = new User({ name, email, password: hashed, role, location, phone });
+    const user = new User({ name, email, password: hashed, role: finalRole, location, phone });
     await user.save();
     
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user._id, name, email, role } });
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, user: { id: user._id, name, email, role: user.role } });
   } catch (err) {
     res.status(500).json({ msg: 'Server error' });
   }
@@ -34,7 +36,7 @@ router.post('/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ msg: 'Invalid credentials' });
     
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user._id, name: user.name, email, role: user.role } });
   } catch (err) {
     res.status(500).json({ msg: 'Server error' });

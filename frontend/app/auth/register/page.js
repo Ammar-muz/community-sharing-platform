@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -18,7 +17,7 @@ export default function Register() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API}/api/auth/register`, {
+      const res = await fetch(`/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)

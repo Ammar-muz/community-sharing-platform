@@ -4,9 +4,10 @@ const User = require('../models/User');
 const Item = require('../models/Item');
 const Booking = require('../models/Booking');
 const auth = require('../middleware/auth');
+const requireAdmin = require('../middleware/admin');
 
 // GET all users
-router.get('/users', auth, async (req, res) => {
+router.get('/users', auth, requireAdmin, async (req, res) => {
   try {
     const users = await User.find().select('-password');
     res.json(users);
@@ -16,7 +17,7 @@ router.get('/users', auth, async (req, res) => {
 });
 
 // GET all items
-router.get('/items', auth, async (req, res) => {
+router.get('/items', auth, requireAdmin, async (req, res) => {
   try {
     const items = await Item.find().populate('owner', 'name email');
     res.json(items);
@@ -26,7 +27,7 @@ router.get('/items', auth, async (req, res) => {
 });
 
 // GET all bookings
-router.get('/bookings', auth, async (req, res) => {
+router.get('/bookings', auth, requireAdmin, async (req, res) => {
   try {
     const bookings = await Booking.find()
       .populate('item', 'title pricePerDay category images')
@@ -39,7 +40,7 @@ router.get('/bookings', auth, async (req, res) => {
 });
 
 // DELETE item
-router.delete('/items/:id', auth, async (req, res) => {
+router.delete('/items/:id', auth, requireAdmin, async (req, res) => {
   try {
     await Item.findByIdAndDelete(req.params.id);
     res.json({ msg: 'Item deleted' });
@@ -49,7 +50,7 @@ router.delete('/items/:id', auth, async (req, res) => {
 });
 
 // DELETE user
-router.delete('/users/:id', auth, async (req, res) => {
+router.delete('/users/:id', auth, requireAdmin, async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
     res.json({ msg: 'User deleted' });

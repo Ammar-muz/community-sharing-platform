@@ -55,6 +55,17 @@ router.get('/owner', auth, async (req, res) => {
   }
 });
 
+// GET BOOKINGS FOR A SINGLE ITEM (booked dates)
+router.get('/item/:id', async (req, res) => {
+  try {
+    const bookings = await Booking.find({ item: req.params.id })
+      .select('startDate endDate status');
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
 // UPDATE BOOKING STATUS (accept or reject)
 router.put('/:id', auth, async (req, res) => {
   try {

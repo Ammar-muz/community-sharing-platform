@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -14,7 +13,7 @@ export default function MyBookings() {
         window.location.href = '/auth/login';
         return;
       }
-      const res = await fetch(`${API}/api/bookings/my`, {
+      const res = await fetch(`/api/bookings/my`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -33,7 +32,7 @@ export default function MyBookings() {
     if (!confirm('Are you sure you want to cancel this booking?')) return;
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${API}/api/bookings/${id}`, {
+      await fetch(`/api/bookings/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -51,7 +50,7 @@ export default function MyBookings() {
     if (!confirm('Are you sure you want to delete this booking?')) return;
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${API}/api/bookings/${id}`, {
+      await fetch(`/api/bookings/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

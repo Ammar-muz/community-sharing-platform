@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ItemDetail({ params }) {
   const { id } = use(params);
@@ -18,7 +17,7 @@ export default function ItemDetail({ params }) {
 
   const fetchItem = async () => {
     try {
-      const res = await fetch(`${API}/api/items/${id}`);
+      const res = await fetch(`/api/items/${id}`);
       const data = await res.json();
       setItem(data);
     } catch (err) {
@@ -29,7 +28,7 @@ export default function ItemDetail({ params }) {
 
   const fetchBookedDates = async () => {
     try {
-      const res = await fetch(`${API}/api/bookings/item/${id}`);
+      const res = await fetch(`/api/bookings/item/${id}`);
       const data = await res.json();
       const dates = [];
       if (Array.isArray(data)) {
@@ -78,7 +77,7 @@ export default function ItemDetail({ params }) {
     setBooking(true);
     setError('');
     try {
-      const res = await fetch(`${API}/api/bookings`, {
+      const res = await fetch(`/api/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

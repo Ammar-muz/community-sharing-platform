@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Items() {
   const [items, setItems] = useState([]);
@@ -13,7 +12,7 @@ export default function Items() {
    useEffect(() => {
   const fetchItems = async () => {
     try {
-      const res = await fetch(`${API}/api/items`);
+      const res = await fetch(`/api/items`);
       const data = await res.json();
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {

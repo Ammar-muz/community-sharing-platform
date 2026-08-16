@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
 const itemSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -7,10 +7,10 @@ const itemSchema = new mongoose.Schema({
   pricePerDay: { type: Number },
   location: { type: String },
   images: [String],
-  owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  owner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   available: { type: Boolean, default: true },
   blockedDates: [{ type: Date }],
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Item', itemSchema);
+export default mongoose.models.Item || mongoose.model("Item", itemSchema);

@@ -18,7 +18,7 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/messages', require('./routes/messages'));
 
 // Test route
-app.get('/', (req, res) => {N
+app.get('/', (req, res) => {
   res.send('Community Sharing Platform API is running!');
 });
 
