@@ -18,130 +18,130 @@ useEffect(() => {
       router.push('/auth/login');
       return;
     }
-    const fetchAll = async () => {
-      try {
-        const [usersRes, itemsRes, bookingsRes] = await Promise.all([
-          fetch(`/api/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`/api/admin/items`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`/api/admin/bookings`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        ]);
-        const usersData = await usersRes.json();
-        const itemsData = await itemsRes.json();
-        const bookingsData = await bookingsRes.json();
-        setUsers(Array.isArray(usersData) ? usersData : []);
-        setItems(Array.isArray(itemsData) ? itemsData : []);
-        setBookings(Array.isArray(bookingsData) ? bookingsData : []);
-      } catch (err) {
-        console.log(err);
-      }
-      setLoading(false);
-    };
-    fetchAll();
-  }, [router]);
-  const handleDeleteItem = async (id) => {
-    if (!confirm('Are you sure?')) return;
-    const token = localStorage.getItem('token');
-    await fetch(`/api/admin/items/${id}`, {
-      method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
-    });
-    setItems(prev => prev.filter(i => i._id !== id));
-  };
+        const fetchAll = async () => {
+          try {
+            const [usersRes, itemsRes, bookingsRes] = await Promise.all([
+              fetch(`/api/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } }),
+              fetch(`/api/admin/items`, { headers: { 'Authorization': `Bearer ${token}` } }),
+              fetch(`/api/admin/bookings`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            ]);
+            const usersData = await usersRes.json();
+            const itemsData = await itemsRes.json();
+            const bookingsData = await bookingsRes.json();
+            setUsers(Array.isArray(usersData) ? usersData : []);
+            setItems(Array.isArray(itemsData) ? itemsData : []);
+            setBookings(Array.isArray(bookingsData) ? bookingsData : []);
+          } catch (err) {
+            console.log(err);
+          }
+          setLoading(false);
+        };
+        fetchAll();
+      }, [router]);
+      const handleDeleteItem = async (id) => {
+        if (!confirm('Are you sure?')) return;
+        const token = localStorage.getItem('token');
+        await fetch(`/api/admin/items/${id}`, {
+          method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
+        });
+        setItems(prev => prev.filter(i => i._id !== id));
+      };
 
-  const handleDeleteUser = async (id) => {
-    if (!confirm('Are you sure?')) return;
-    const token = localStorage.getItem('token');
-    await fetch(`/api/admin/users/${id}`, {
-      method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
-    });
-    setUsers(prev => prev.filter(u => u._id !== id));
-  };
+      const handleDeleteUser = async (id) => {
+        if (!confirm('Are you sure?')) return;
+        const token = localStorage.getItem('token');
+        await fetch(`/api/admin/users/${id}`, {
+          method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
+        });
+        setUsers(prev => prev.filter(u => u._id !== id));
+      };
 
-  const getImgSrc = (src) => {
-    if (!src) return '';
-    return src.startsWith('data:') ? src : `data:image/jpeg;base64,${src}`;
-  };
+      const getImgSrc = (src) => {
+        if (!src) return '';
+        return src.startsWith('data:') ? src : `data:image/jpeg;base64,${src}`;
+      };
 
-  // Date filter function
-  const filterByDate = (arr, dateField = 'createdAt') => {
-    const now = new Date();
-    return arr.filter(item => {
-      const date = new Date(item[dateField] || item.createdAt);
-      if (dateFilter === 'today') {
-        return date.toDateString() === now.toDateString();
-      } else if (dateFilter === 'week') {
-        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-        return date >= weekAgo;
-      } else if (dateFilter === 'month') {
-        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-      }
-      return true;
-    });
-  };
+      // Date filter function
+      const filterByDate = (arr, dateField = 'createdAt') => {
+        const now = new Date();
+        return arr.filter(item => {
+          const date = new Date(item[dateField] || item.createdAt);
+          if (dateFilter === 'today') {
+            return date.toDateString() === now.toDateString();
+          } else if (dateFilter === 'week') {
+            const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+            return date >= weekAgo;
+          } else if (dateFilter === 'month') {
+            return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+          }
+          return true;
+        });
+      };
 
-  const filteredUsers = filterByDate(users);
-  const filteredItems = filterByDate(items);
-  const filteredBookings = filterByDate(bookings, 'createdAt');
+      const filteredUsers = filterByDate(users);
+      const filteredItems = filterByDate(items);
+      const filteredBookings = filterByDate(bookings, 'createdAt');
 
-  const totalRevenue = filteredBookings
-    .filter(b => b.status === 'confirmed')
-    .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+      const totalRevenue = filteredBookings
+        .filter(b => b.status === 'confirmed')
+        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
 
-  const stats = {
-    totalUsers: filteredUsers.length,
-    totalItems: filteredItems.length,
-    totalBookings: filteredBookings.length,
-    totalRevenue,
-    pendingBookings: filteredBookings.filter(b => b.status === 'pending').length,
-    confirmedBookings: filteredBookings.filter(b => b.status === 'confirmed').length,
-    rejectedBookings: filteredBookings.filter(b => b.status === 'rejected').length,
-  };
+      const stats = {
+        totalUsers: filteredUsers.length,
+        totalItems: filteredItems.length,
+        totalBookings: filteredBookings.length,
+        totalRevenue,
+        pendingBookings: filteredBookings.filter(b => b.status === 'pending').length,
+        confirmedBookings: filteredBookings.filter(b => b.status === 'confirmed').length,
+        rejectedBookings: filteredBookings.filter(b => b.status === 'rejected').length,
+      };
 
-  const categoryCount = {
-    vehicle: filteredItems.filter(i => i.category === 'vehicle').length,
-    tool: filteredItems.filter(i => i.category === 'tool').length,
-    equipment: filteredItems.filter(i => i.category === 'equipment').length,
-  };
+      const categoryCount = {
+        vehicle: filteredItems.filter(i => i.category === 'vehicle').length,
+        tool: filteredItems.filter(i => i.category === 'tool').length,
+        equipment: filteredItems.filter(i => i.category === 'equipment').length,
+      };
 
-  const maxCategory = Math.max(categoryCount.vehicle, categoryCount.tool, categoryCount.equipment) || 1;
+      const maxCategory = Math.max(categoryCount.vehicle, categoryCount.tool, categoryCount.equipment) || 1;
 
-  // Date filter buttons
-  const DateFilterBar = () => (
-    <div style={{
-      display: 'flex', gap: '8px', marginBottom: '24px',
-      background: 'rgba(255,255,255,0.03)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderRadius: '14px', padding: '8px'
-    }}>
-      {[
-        { key: 'all', label: '📅 All Time' },
-        { key: 'today', label: '☀️ Today' },
-        { key: 'week', label: '📆 This Week' },
-        { key: 'month', label: '🗓️ This Month' },
-      ].map(f => (
-        <button key={f.key} onClick={() => setDateFilter(f.key)} style={{
-          padding: '8px 18px', borderRadius: '10px', border: 'none',
-          cursor: 'pointer', fontSize: '13px', fontWeight: '600',
-          background: dateFilter === f.key ? 'linear-gradient(135deg, #1565c0, #0d47a1)' : 'transparent',
-          color: dateFilter === f.key ? 'white' : '#546e7a',
-          transition: 'all 0.2s'
-        }}>{f.label}</button>
-      ))}
-      <div style={{marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px'}}>
-        <span style={{color: '#546e7a', fontSize: '12px'}}>Showing:</span>
-        <span style={{color: '#64b5f6', fontSize: '12px', fontWeight: '600'}}>
-          {dateFilter === 'all' ? 'All records' :
-           dateFilter === 'today' ? "Today's records" :
-           dateFilter === 'week' ? 'Last 7 days' : 'This month'}
-        </span>
-      </div>
-    </div>
-  );
+      // Date filter buttons
+      const DateFilterBar = () => (
+        <div style={{
+          display: 'flex', gap: '8px', marginBottom: '24px',
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '14px', padding: '8px'
+        }}>
+          {[
+            { key: 'all', label: '📅 All Time' },
+            { key: 'today', label: '☀️ Today' },
+            { key: 'week', label: '📆 This Week' },
+            { key: 'month', label: '🗓️ This Month' },
+          ].map(f => (
+            <button key={f.key} onClick={() => setDateFilter(f.key)} style={{
+              padding: '8px 18px', borderRadius: '10px', border: 'none',
+              cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+              background: dateFilter === f.key ? 'linear-gradient(135deg, #1565c0, #0d47a1)' : 'transparent',
+              color: dateFilter === f.key ? 'white' : '#546e7a',
+              transition: 'all 0.2s'
+            }}>{f.label}</button>
+          ))}
+          <div style={{marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px'}}>
+            <span style={{color: '#546e7a', fontSize: '12px'}}>Showing:</span>
+            <span style={{color: '#64b5f6', fontSize: '12px', fontWeight: '600'}}>
+              {dateFilter === 'all' ? 'All records' :
+              dateFilter === 'today' ? "Today's records" :
+              dateFilter === 'week' ? 'Last 7 days' : 'This month'}
+            </span>
+          </div>
+        </div>
+      );
 
-  return (
-    <main style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0a1628 0%, #0d2137 50%, #0a1628 100%)',
-    }}>
+      return (
+        <main style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #0a1628 0%, #0d2137 50%, #0a1628 100%)',
+        }}>
 
       {/* NAVBAR */}
       <nav style={{
@@ -197,7 +197,7 @@ useEffect(() => {
               borderRadius: '18px', padding: '24px',
               display: 'flex', alignItems: 'center', gap: '16px'
             }}>
-              <div style={{
+              <div style={{                               
                 background: `${stat.color}33`, width: '56px', height: '56px',
                 borderRadius: '16px', display: 'flex', alignItems: 'center',
                 justifyContent: 'center', fontSize: '26px', flexShrink: 0
