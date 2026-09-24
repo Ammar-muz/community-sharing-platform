@@ -17,6 +17,22 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Get reviews for a specific item
+router.get('/:itemId', async (req, res) => {
+  try {
+    const reviews = await Review.find({
+      itemId: req.params.itemId
+    }).sort({ createdAt: -1 });
+
+    res.json(reviews);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Failed to get item reviews',
+      error: error.message
+    });
+  }
+});
+
 // Get all reviews
 router.get('/', async (req, res) => {
   try {
