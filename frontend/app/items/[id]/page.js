@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useMemo } from 'react';
 import Link from 'next/link';
 
 export default function ItemDetail({ params }) {
@@ -21,38 +21,43 @@ export default function ItemDetail({ params }) {
   const [reviewSuccess, setReviewSuccess] = useState('');
   const [notification, setNotification] = useState(null);
 
-  const API = '/backend';
+  const API = useMemo(() => '/backend', []);
 
   const showNotification = (msg, type = 'success') => {
     setNotification({ msg, type });
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const fetchItem = async () => {
-    try {
-      const res = await fetch(`${API}/api/items/${id}`);
-      const data = await res.json();
-      setItem(data);
-    } catch (err) {
-      console.log(err);
-    }
-    setLoading(false);
-  };
-
-  const fetchReviews = async () => {
-    try {
-      const res = await fetch(`${API}/api/reviews/${id}`);
-      const data = await res.json();
-      setReviews(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
   useEffect(() => {
-    fetchItem();
-    fetchReviews();
-  }, [id]);
+    let active = true;
+
+    const loadData = async () => {
+      try {
+        const [itemRes, reviewsRes] = await Promise.all([
+          fetch(`${API}/api/items/${id}`),
+          fetch(`${API}/api/reviews/${id}`)
+        ]);
+
+        if (!active) return;
+
+        const itemData = await itemRes.json();
+        const reviewsData = await reviewsRes.json();
+
+        setItem(itemData);
+        setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+      } catch (err) {
+        console.log(err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void loadData();
+
+    return () => {
+      active = false;
+    };
+  }, [API, id]);
 
   const getImgSrc = (src) => {
     if (!src) return '';
