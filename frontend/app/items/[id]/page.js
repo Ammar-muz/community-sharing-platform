@@ -21,7 +21,7 @@ export default function ItemDetail({ params }) {
   const [reviewSuccess, setReviewSuccess] = useState('');
   const [notification, setNotification] = useState(null);
 
-  const API = 'http://44.200.227.55:5000';
+  const API = '/backend';
 
   const showNotification = (msg, type = 'success') => {
     setNotification({ msg, type });
