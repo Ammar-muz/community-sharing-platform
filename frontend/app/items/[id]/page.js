@@ -6,6 +6,7 @@ export default function ItemDetail({ params }) {
   const { id } = use(params);
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [booking, setBooking] = useState(false);
@@ -33,22 +34,29 @@ export default function ItemDetail({ params }) {
 
     const loadData = async () => {
       try {
-        const [itemRes, reviewsRes] = await Promise.all([
-          fetch(`${API}/api/items/${id}`),
-          fetch(`${API}/api/reviews/${id}`)
-        ]);
+        const itemRes = await fetch(`/api/items/${id}`);
 
         if (!active) return;
 
         const itemData = await itemRes.json();
-        const reviewsData = await reviewsRes.json();
+        if (!itemRes.ok || !itemData?._id) {
+          throw new Error(itemData.msg || 'This item could not be found.');
+        }
 
         setItem(itemData);
-        setReviews(Array.isArray(reviewsData) ? reviewsData : []);
       } catch (err) {
-        console.log(err);
+        setLoadError(err.message || 'Unable to load this item. Please try again.');
       } finally {
         if (active) setLoading(false);
+      }
+
+      try {
+        const reviewsRes = await fetch(`${API}/api/reviews/${id}`);
+        if (!reviewsRes.ok) return;
+        const reviewsData = await reviewsRes.json();
+        if (active) setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+      } catch (err) {
+        console.log(err);
       }
     };
 
@@ -76,6 +84,17 @@ export default function ItemDetail({ params }) {
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : null;
 
+  const fetchReviews = async () => {
+    try {
+      const res = await fetch(`${API}/api/reviews/${id}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setReviews(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   const handleBooking = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -85,7 +104,7 @@ export default function ItemDetail({ params }) {
     setBooking(true);
     setError('');
     try {
-      const res = await fetch(`${API}/api/bookings`, {
+      const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,6 +178,20 @@ export default function ItemDetail({ params }) {
       <div style={{textAlign: 'center', color: '#546e7a'}}>
         <div style={{fontSize: '48px', marginBottom: '16px'}}>⏳</div>
         <p>Loading item...</p>
+      </div>
+    </main>
+  );
+
+  if (!item) return (
+    <main style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #0a1628 0%, #0d2137 50%, #0a1628 100%)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px'
+    }}>
+      <div style={{textAlign: 'center', color: '#90a4ae'}}>
+        <h2 style={{color: 'white'}}>Unable to load item</h2>
+        <p>{loadError || 'This item may no longer be available.'}</p>
+        <Link href="/items" style={{color: '#64b5f6'}}>Back to Items</Link>
       </div>
     </main>
   );
@@ -445,7 +478,7 @@ export default function ItemDetail({ params }) {
                             color: 'white', fontWeight: 'bold', fontSize: '14px'
                           }}>{review.reviewer?.name?.charAt(0).toUpperCase()}</div>
                           <div>
-                            <p style={{color: 'white', fontSize: '14px', fontWeight: '500', margin: 0}}>{review.reviewer?.name}</p>
+                            <p style={{color: 'white', fontSize: '14px', fontWeight: '500', margin: 0}}>{review.userId?.name || 'Community member'}</p>
                             <p style={{color: '#546e7a', fontSize: '11px', margin: 0}}>
                               {new Date(review.createdAt).toLocaleDateString()}
                             </p>

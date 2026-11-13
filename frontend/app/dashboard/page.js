@@ -1,6 +1,11 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+
+const formatMoneyMinor = amountMinor => `LKR ${(amountMinor / 100).toLocaleString('en-LK', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+})}`;
 
 function DashboardMessages({ currentUser }) {
   const [conversations, setConversations] = useState([]);
@@ -10,7 +15,7 @@ function DashboardMessages({ currentUser }) {
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef(null);
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/messages/conversations`, {
@@ -32,27 +37,25 @@ function DashboardMessages({ currentUser }) {
             });
           }
         });
-        setConversations(unique);
+        return unique;
       }
     } catch (err) {
       console.log(err);
     }
-    setLoading(false);
-  };
+  }, [currentUser]);
 
-  const fetchMessages = async (userId) => {
+  const fetchMessages = useCallback(async (userId) => {
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/messages/${userId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      setMessages(Array.isArray(data) ? data : []);
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      return Array.isArray(data) ? data : [];
     } catch (err) {
       console.log(err);
     }
-  };
+  }, []);
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedUser) return;
@@ -67,7 +70,9 @@ function DashboardMessages({ currentUser }) {
       if (data._id) {
         setMessages(prev => [...prev, data]);
         setNewMessage('');
-        fetchConversations();
+        fetchConversations().then(data => {
+          if (Array.isArray(data)) setConversations(data);
+        });
       }
     } catch (err) {
       console.log(err);
@@ -75,14 +80,43 @@ function DashboardMessages({ currentUser }) {
   };
 
   useEffect(() => {
-    if (currentUser) fetchConversations();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]);
+    if (!currentUser) return undefined;
+    let cancelled = false;
+    const loadConversations = async () => {
+      try {
+        const data = await fetchConversations();
+        if (!cancelled && Array.isArray(data)) setConversations(data);
+      } catch (err) {
+        console.log(err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void loadConversations();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser, fetchConversations]);
 
   useEffect(() => {
-    if (selectedUser) fetchMessages(selectedUser._id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedUser]);
+    if (!selectedUser) return undefined;
+    let cancelled = false;
+    const loadMessages = async () => {
+      try {
+        const data = await fetchMessages(selectedUser._id);
+        if (!cancelled && Array.isArray(data)) {
+          setMessages(data);
+          setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    };
+    void loadMessages();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedUser, fetchMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -256,6 +290,17 @@ export default function Dashboard() {
     setUser(parsedUser);
     fetchMyItems();
     fetchMyBookings();
+    const refreshOwnerBookings = () => {
+      if (document.visibilityState === 'visible') fetchMyBookings();
+    };
+    const refreshInterval = window.setInterval(refreshOwnerBookings, 30000);
+    window.addEventListener('focus', refreshOwnerBookings);
+    document.addEventListener('visibilitychange', refreshOwnerBookings);
+    return () => {
+      window.clearInterval(refreshInterval);
+      window.removeEventListener('focus', refreshOwnerBookings);
+      document.removeEventListener('visibilitychange', refreshOwnerBookings);
+    };
   }, []);
 
   const handleImageChange = async (e) => {
@@ -473,8 +518,8 @@ export default function Dashboard() {
           {[
             { label: 'My Items', value: items.length, icon: '📦', color: '#1565c0' },
             { label: 'Total Bookings', value: bookings.length, icon: '📅', color: '#0d47a1' },
-            { label: 'Confirmed', value: bookings.filter(b => b.status === 'confirmed').length, icon: '✅', color: '#2e7d32' },
-            { label: 'Total Income', value: `Rs. ${bookings.filter(b => b.status === 'confirmed').reduce((sum, b) => sum + (b.totalPrice || 0), 0)}`, icon: '💰', color: '#1a237e' },
+            { label: 'Accepted', value: bookings.filter(b => ['accepted', 'confirmed'].includes(b.status)).length, icon: '✅', color: '#2e7d32' },
+            { label: 'Total Income', value: formatMoneyMinor(bookings.reduce((sum, b) => sum + (Number.isSafeInteger(b.amountPaidMinor) ? b.amountPaidMinor : 0), 0)), icon: '💰', color: '#1a237e' },
           ].map((stat, i) => (
             <div key={i} style={{
               background: 'rgba(255,255,255,0.05)',
@@ -509,7 +554,7 @@ export default function Dashboard() {
             </h3>
             <div style={{display: 'flex', flexDirection: 'column', gap: '14px'}}>
               {[
-                { label: 'Confirmed', value: bookings.filter(b => b.status === 'confirmed').length, color: '#4caf50' },
+                { label: 'Accepted', value: bookings.filter(b => ['accepted', 'confirmed'].includes(b.status)).length, color: '#4caf50' },
                 { label: 'Pending', value: bookings.filter(b => b.status === 'pending').length, color: '#ffc107' },
                 { label: 'Rejected', value: bookings.filter(b => b.status === 'rejected').length, color: '#f44336' },
               ].map((bar, i) => {
@@ -529,7 +574,7 @@ export default function Dashboard() {
             </div>
             <div style={{display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)'}}>
               {[
-                { label: 'Confirmed', color: '#4caf50', value: bookings.filter(b => b.status === 'confirmed').length },
+                { label: 'Accepted', color: '#4caf50', value: bookings.filter(b => ['accepted', 'confirmed'].includes(b.status)).length },
                 { label: 'Pending', color: '#ffc107', value: bookings.filter(b => b.status === 'pending').length },
                 { label: 'Rejected', color: '#f44336', value: bookings.filter(b => b.status === 'rejected').length },
               ].map((item, i) => (
@@ -563,19 +608,19 @@ export default function Dashboard() {
             ) : (
               <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
                 {items.slice(0, 5).map((item, i) => {
-                  const itemIncome = bookings
-                    .filter(b => b.item?._id === item._id && b.status === 'confirmed')
-                    .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
-                  const maxIncome = Math.max(...items.map(it =>
-                    bookings.filter(b => b.item?._id === it._id && b.status === 'confirmed')
-                            .reduce((sum, b) => sum + (b.totalPrice || 0), 0)
+                  const itemIncomeMinor = bookings
+                    .filter(b => b.item?._id === item._id)
+                    .reduce((sum, b) => sum + (Number.isSafeInteger(b.amountPaidMinor) ? b.amountPaidMinor : 0), 0);
+                  const maxIncomeMinor = Math.max(...items.map(it =>
+                    bookings.filter(b => b.item?._id === it._id)
+                            .reduce((sum, b) => sum + (Number.isSafeInteger(b.amountPaidMinor) ? b.amountPaidMinor : 0), 0)
                   ), 1);
-                  const percent = (itemIncome / maxIncome) * 100;
+                  const percent = (itemIncomeMinor / maxIncomeMinor) * 100;
                   return (
                     <div key={i}>
                       <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '6px'}}>
                         <span style={{color: '#90a4ae', fontSize: '12px', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{item.title}</span>
-                        <span style={{color: '#64b5f6', fontSize: '12px', fontWeight: '600'}}>Rs. {itemIncome}</span>
+                        <span style={{color: '#64b5f6', fontSize: '12px', fontWeight: '600'}}>{formatMoneyMinor(itemIncomeMinor)}</span>
                       </div>
                       <div style={{background: 'rgba(255,255,255,0.08)', borderRadius: '999px', height: '8px', overflow: 'hidden'}}>
                         <div style={{width: `${percent}%`, height: '100%', background: 'linear-gradient(90deg, #1565c0, #64b5f6)', borderRadius: '999px', transition: 'width 1s ease'}}/>
@@ -588,7 +633,7 @@ export default function Dashboard() {
             <div style={{marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
               <span style={{color: '#546e7a', fontSize: '13px'}}>Total Income</span>
               <span style={{color: '#64b5f6', fontSize: '18px', fontWeight: 'bold'}}>
-                Rs. {bookings.filter(b => b.status === 'confirmed').reduce((sum, b) => sum + (b.totalPrice || 0), 0)}
+                {formatMoneyMinor(bookings.reduce((sum, b) => sum + (Number.isSafeInteger(b.amountPaidMinor) ? b.amountPaidMinor : 0), 0))}
               </span>
             </div>
           </div>
@@ -772,7 +817,10 @@ export default function Dashboard() {
                         {item.images && item.images.length > 0 ? (
                           <>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={getImgSrc(item.images[currentIdx])} alt={item.title} style={{width: '100%', height: '100%', objectFit: 'cover'}}/>
+                            <img src={getImgSrc(item.images[currentIdx])} alt={item.title} style={{
+                              width: '100%', height: '100%', objectFit: 'contain',
+                              background: 'rgba(255,255,255,0.08)', padding: '10px', boxSizing: 'border-box'
+                            }}/>
                             {item.images.length > 1 && (
                               <>
                                 <button onClick={() => prevImg(item._id, item.images.length)} style={{
@@ -862,18 +910,26 @@ export default function Dashboard() {
                     📅 {new Date(booking.startDate).toLocaleDateString()} → {new Date(booking.endDate).toLocaleDateString()}
                   </p>
                   <p style={{color: '#64b5f6', fontWeight: 'bold'}}>Rs. {booking.totalPrice}</p>
+                  {booking.totalAmountMinor != null && (
+                    <p style={{color: '#90a4ae', fontSize: '12px'}}>
+                      Total rental {booking.currency} {(booking.totalAmountMinor / 100).toFixed(2)} ·
+                      Paid {((booking.amountPaidMinor || 0) / 100).toFixed(2)} ·
+                      Balance {((booking.remainingBalanceMinor ?? booking.totalAmountMinor) / 100).toFixed(2)} ·
+                      Payment {booking.paymentStatus || 'unpaid'}
+                    </p>
+                  )}
                 </div>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end'}}>
                   <span style={{
-                    background: booking.status === 'confirmed' ? 'rgba(76,175,80,0.2)' :
+                    background: ['accepted', 'confirmed'].includes(booking.status) ? 'rgba(76,175,80,0.2)' :
                                booking.status === 'rejected' ? 'rgba(244,67,54,0.2)' : 'rgba(255,193,7,0.2)',
-                    color: booking.status === 'confirmed' ? '#81c784' :
+                    color: ['accepted', 'confirmed'].includes(booking.status) ? '#81c784' :
                            booking.status === 'rejected' ? '#ef9a9a' : '#fff176',
                     padding: '4px 14px', borderRadius: '999px', fontSize: '13px'
                   }}>{booking.status}</span>
                   {booking.status === 'pending' && (
                     <div style={{display: 'flex', gap: '8px'}}>
-                      <button onClick={() => handleBookingStatus(booking._id, 'confirmed')} style={{
+                      <button onClick={() => handleBookingStatus(booking._id, 'accepted')} style={{
                         padding: '6px 16px', background: 'rgba(76,175,80,0.2)',
                         border: '1px solid rgba(76,175,80,0.3)',
                         borderRadius: '8px', color: '#81c784', cursor: 'pointer', fontSize: '13px'

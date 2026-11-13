@@ -3,13 +3,52 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+function DateFilterBar({ dateFilter, setDateFilter }) {
+  return (
+    <div style={{
+      display: 'flex', gap: '8px', marginBottom: '24px',
+      background: 'rgba(255,255,255,0.03)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: '14px', padding: '8px'
+    }}>
+      {[
+        { key: 'all', label: '📅 All Time' },
+        { key: 'today', label: '☀️ Today' },
+        { key: 'week', label: '📆 This Week' },
+        { key: 'month', label: '🗓️ This Month' },
+      ].map(f => (
+        <button key={f.key} onClick={() => setDateFilter(f.key)} style={{
+          padding: '8px 18px', borderRadius: '10px', border: 'none',
+          cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+          background: dateFilter === f.key ? 'linear-gradient(135deg, #1565c0, #0d47a1)' : 'transparent',
+          color: dateFilter === f.key ? 'white' : '#546e7a',
+          transition: 'all 0.2s'
+        }}>{f.label}</button>
+      ))}
+      <div style={{marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px'}}>
+        <span style={{color: '#546e7a', fontSize: '12px'}}>Showing:</span>
+        <span style={{color: '#64b5f6', fontSize: '12px', fontWeight: '600'}}>
+          {dateFilter === 'all' ? 'All records' :
+          dateFilter === 'today' ? "Today's records" :
+          dateFilter === 'week' ? 'Last 7 days' : 'This month'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [users, setUsers] = useState([]);
   const [items, setItems] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [paymentProvider, setPaymentProvider] = useState('payhere');
+  const [paymentSetupError, setPaymentSetupError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [lastUpdated, setLastUpdated] = useState('');
   const [dateFilter, setDateFilter] = useState('all');
 
 useEffect(() => {
@@ -18,6 +57,7 @@ useEffect(() => {
       router.push('/auth/login');
       return;
     }
+        let active = true;
         const fetchAll = async () => {
           try {
             const [usersRes, itemsRes, bookingsRes] = await Promise.all([
@@ -25,18 +65,60 @@ useEffect(() => {
               fetch(`/api/admin/items`, { headers: { 'Authorization': `Bearer ${token}` } }),
               fetch(`/api/admin/bookings`, { headers: { 'Authorization': `Bearer ${token}` } }),
             ]);
+            const failedResponse = [usersRes, itemsRes, bookingsRes].find(response => !response.ok);
+            if (failedResponse) {
+              const errorData = await failedResponse.json();
+              throw new Error(errorData.msg || `Admin data request failed (${failedResponse.status})`);
+            }
+
             const usersData = await usersRes.json();
             const itemsData = await itemsRes.json();
             const bookingsData = await bookingsRes.json();
-            setUsers(Array.isArray(usersData) ? usersData : []);
-            setItems(Array.isArray(itemsData) ? itemsData : []);
-            setBookings(Array.isArray(bookingsData) ? bookingsData : []);
+            const paymentsRes = await fetch(`/api/admin/payments`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!paymentsRes.ok) {
+              const errorData = await paymentsRes.json();
+              throw new Error(errorData.msg || `Admin payments request failed (${paymentsRes.status})`);
+            }
+            const paymentsData = await paymentsRes.json();
+            if (!Array.isArray(usersData) || !Array.isArray(itemsData) || !Array.isArray(bookingsData)) {
+              throw new Error('The server returned an unexpected response while loading admin data.');
+            }
+            if (!Array.isArray(paymentsData.payments) ||
+                (paymentsData.checkoutConfigurationError != null &&
+                 typeof paymentsData.checkoutConfigurationError !== 'string')) {
+              throw new Error('The server returned an unexpected response while loading payments.');
+            }
+
+            if (active) {
+              setUsers(usersData);
+              setItems(itemsData);
+              setBookings(bookingsData);
+              setPayments(paymentsData.payments);
+              setPaymentProvider(paymentsData.checkoutProvider);
+              setPaymentSetupError(paymentsData.checkoutConfigurationError || '');
+              setLastUpdated(new Date().toLocaleString());
+              setLoadError('');
+            }
           } catch (err) {
-            console.log(err);
+            if (active) setLoadError(err.message || 'Unable to load admin data. Please try again.');
           }
-          setLoading(false);
+          if (active) setLoading(false);
         };
         fetchAll();
+        const refreshAdminData = () => {
+          if (document.visibilityState === 'visible') void fetchAll();
+        };
+        const refreshInterval = window.setInterval(refreshAdminData, 30000);
+        window.addEventListener('focus', refreshAdminData);
+        document.addEventListener('visibilitychange', refreshAdminData);
+        return () => {
+          active = false;
+          window.clearInterval(refreshInterval);
+          window.removeEventListener('focus', refreshAdminData);
+          document.removeEventListener('visibilitychange', refreshAdminData);
+        };
       }, [router]);
       const handleDeleteItem = async (id) => {
         if (!confirm('Are you sure?')) return;
@@ -81,18 +163,25 @@ useEffect(() => {
       const filteredUsers = filterByDate(users);
       const filteredItems = filterByDate(items);
       const filteredBookings = filterByDate(bookings, 'createdAt');
+      const filteredPayments = filterByDate(payments, 'paidAt')
+        .filter(payment => payment.status === 'successful');
 
-      const totalRevenue = filteredBookings
-        .filter(b => b.status === 'confirmed')
-        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+      const totalRevenueMinor = filteredPayments
+        .reduce((sum, payment) => sum + (Number.isSafeInteger(payment.amountMinor) ? payment.amountMinor : 0), 0);
+      const outstandingRentalMinor = filteredBookings
+        .filter(booking => ['accepted', 'confirmed'].includes(booking.status))
+        .reduce((sum, booking) => {
+          if (!Number.isSafeInteger(booking.remainingBalanceMinor)) return sum;
+          return sum + booking.remainingBalanceMinor;
+        }, 0);
 
       const stats = {
         totalUsers: filteredUsers.length,
         totalItems: filteredItems.length,
         totalBookings: filteredBookings.length,
-        totalRevenue,
+        totalRevenueMinor,
         pendingBookings: filteredBookings.filter(b => b.status === 'pending').length,
-        confirmedBookings: filteredBookings.filter(b => b.status === 'confirmed').length,
+        confirmedBookings: filteredBookings.filter(b => ['accepted', 'confirmed'].includes(b.status)).length,
         rejectedBookings: filteredBookings.filter(b => b.status === 'rejected').length,
       };
 
@@ -103,39 +192,6 @@ useEffect(() => {
       };
 
       const maxCategory = Math.max(categoryCount.vehicle, categoryCount.tool, categoryCount.equipment) || 1;
-
-      // Date filter buttons
-      const DateFilterBar = () => (
-        <div style={{
-          display: 'flex', gap: '8px', marginBottom: '24px',
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '14px', padding: '8px'
-        }}>
-          {[
-            { key: 'all', label: '📅 All Time' },
-            { key: 'today', label: '☀️ Today' },
-            { key: 'week', label: '📆 This Week' },
-            { key: 'month', label: '🗓️ This Month' },
-          ].map(f => (
-            <button key={f.key} onClick={() => setDateFilter(f.key)} style={{
-              padding: '8px 18px', borderRadius: '10px', border: 'none',
-              cursor: 'pointer', fontSize: '13px', fontWeight: '600',
-              background: dateFilter === f.key ? 'linear-gradient(135deg, #1565c0, #0d47a1)' : 'transparent',
-              color: dateFilter === f.key ? 'white' : '#546e7a',
-              transition: 'all 0.2s'
-            }}>{f.label}</button>
-          ))}
-          <div style={{marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px'}}>
-            <span style={{color: '#546e7a', fontSize: '12px'}}>Showing:</span>
-            <span style={{color: '#64b5f6', fontSize: '12px', fontWeight: '600'}}>
-              {dateFilter === 'all' ? 'All records' :
-              dateFilter === 'today' ? "Today's records" :
-              dateFilter === 'week' ? 'Last 7 days' : 'This month'}
-            </span>
-          </div>
-        </div>
-      );
 
       return (
         <main style={{
@@ -176,12 +232,22 @@ useEffect(() => {
             <p style={{color: '#546e7a'}}>Monitor and manage the entire platform</p>
           </div>
           <div style={{color: '#546e7a', fontSize: '13px'}}>
-            Last updated: {new Date().toLocaleString()}
+            {lastUpdated ? `Last updated: ${lastUpdated}` : loadError ? 'Update unavailable' : 'Loading admin data...'}
           </div>
         </div>
 
+        {loadError && (
+          <div role="alert" style={{
+            marginBottom: '20px', padding: '14px 18px', borderRadius: '12px',
+            background: 'rgba(244,67,54,0.12)', border: '1px solid rgba(244,67,54,0.4)',
+            color: '#ef9a9a'
+          }}>
+            Admin details could not be loaded: {loadError}
+          </div>
+        )}
+
         {/* DATE FILTER */}
-        <DateFilterBar />
+        <DateFilterBar dateFilter={dateFilter} setDateFilter={setDateFilter} />
 
         {/* TOP STATS */}
         <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px'}}>
@@ -189,7 +255,7 @@ useEffect(() => {
             { label: 'Total Users', value: stats.totalUsers, icon: '👥', color: '#1565c0', sub: 'Registered users' },
             { label: 'Total Items', value: stats.totalItems, icon: '📦', color: '#0d47a1', sub: 'Listed on platform' },
             { label: 'Total Bookings', value: stats.totalBookings, icon: '📅', color: '#1a237e', sub: 'All time' },
-            { label: 'Total Revenue', value: `Rs. ${stats.totalRevenue}`, icon: '💰', color: '#283593', sub: 'Confirmed bookings' },
+            { label: 'Total Income', value: `LKR ${(stats.totalRevenueMinor / 100).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: '💰', color: '#283593', sub: paymentProvider === 'mock' ? 'Simulated successful payments' : 'Verified successful payments' },
           ].map((stat, i) => (
             <div key={i} style={{
               background: 'rgba(255,255,255,0.05)',
@@ -311,7 +377,7 @@ useEffect(() => {
 
         {/* TABS */}
         <div style={{display: 'flex', gap: '8px', marginBottom: '24px'}}>
-          {['overview', 'users', 'items', 'bookings'].map(tab => (
+          {['overview', 'users', 'items', 'bookings', 'payments'].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} style={{
               padding: '10px 24px', borderRadius: '12px', border: 'none',
               cursor: 'pointer', fontSize: '14px', fontWeight: '600',
@@ -321,7 +387,8 @@ useEffect(() => {
               {tab === 'overview' ? `📊 Overview (${stats.totalBookings})` :
                tab === 'users' ? `👥 Users (${stats.totalUsers})` :
                tab === 'items' ? `📦 Items (${stats.totalItems})` :
-               `📅 Bookings (${stats.totalBookings})`}
+               tab === 'bookings' ? `📅 Bookings (${stats.totalBookings})` :
+               `💳 Payments (${payments.length})`}
             </button>
           ))}
         </div>
@@ -389,9 +456,9 @@ useEffect(() => {
                     </div>
                   </div>
                   <span style={{
-                    background: booking.status === 'confirmed' ? 'rgba(76,175,80,0.2)' :
+                    background: ['accepted', 'confirmed'].includes(booking.status) ? 'rgba(76,175,80,0.2)' :
                                booking.status === 'rejected' ? 'rgba(244,67,54,0.2)' : 'rgba(255,193,7,0.2)',
-                    color: booking.status === 'confirmed' ? '#81c784' :
+                    color: ['accepted', 'confirmed'].includes(booking.status) ? '#81c784' :
                            booking.status === 'rejected' ? '#ef9a9a' : '#fff176',
                     padding: '3px 10px', borderRadius: '999px', fontSize: '11px'
                   }}>{booking.status}</span>
@@ -532,11 +599,92 @@ useEffect(() => {
           </div>
         )}
 
+        {activeTab === 'payments' && (
+          <div>
+            {paymentSetupError && (
+              <div role="alert" style={{
+                padding: '15px 18px', marginBottom: '16px', borderRadius: '14px',
+                color: '#ffd18a', background: 'rgba(255,167,38,0.09)',
+                border: '1px solid rgba(255,183,77,0.25)', fontSize: '13px', lineHeight: 1.6
+              }}>
+                <strong style={{display: 'block', marginBottom: '4px'}}>PayHere sandbox is not ready</strong>
+                {paymentSetupError} Configure the server-side settings in <code>frontend/.env.local</code> and restart the frontend server. Until it is configured, checkout cannot be started and payment attempts will not appear here.
+              </div>
+            )}
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '12px',
+              marginBottom: '16px'
+            }}>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px',
+                flexWrap: 'wrap', padding: '18px 20px', borderRadius: '16px',
+                background: 'rgba(76,175,80,0.08)', border: '1px solid rgba(76,175,80,0.2)'
+              }}>
+                <div>
+                  <div style={{color: '#81c784', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em'}}>
+                    {paymentProvider === 'mock' ? 'Recorded demo payments' : 'Verified payments received'}
+                  </div>
+                  <strong style={{display: 'block', marginTop: '5px', color: 'white', fontSize: '23px'}}>
+                    LKR {(totalRevenueMinor / 100).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </strong>
+                </div>
+                <span style={{color: '#a5d6a7', fontSize: '13px'}}>{filteredPayments.length} successful payment{filteredPayments.length === 1 ? '' : 's'}</span>
+              </div>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px',
+                flexWrap: 'wrap', padding: '18px 20px', borderRadius: '16px',
+                background: 'rgba(255,183,77,0.07)', border: '1px solid rgba(255,183,77,0.18)'
+              }}>
+                <div>
+                  <div style={{color: '#ffd180', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em'}}>
+                    Outstanding accepted bookings
+                  </div>
+                  <strong style={{display: 'block', marginTop: '5px', color: 'white', fontSize: '23px'}}>
+                    LKR {(outstandingRentalMinor / 100).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </strong>
+                </div>
+                <span style={{color: '#ffe0a3', fontSize: '12px'}}>Not payment income</span>
+              </div>
+            </div>
+            <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+            {payments.length === 0 ? (
+              <p style={{color: '#90a4ae'}}>
+                No payment attempts have been recorded. {paymentSetupError
+                  ? 'Checkout is unavailable until the selected payment provider is configured above.'
+                  : paymentProvider === 'mock'
+                    ? 'Successful simulated payments are included in demo income.'
+                    : 'Only successful payments confirmed by PayHere appear as income.'}
+              </p>
+            ) : payments.map(payment => (
+              <article key={payment.id} style={{
+                padding: '18px', borderRadius: '14px',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(100,181,246,0.15)'
+              }}>
+                <strong style={{color: 'white'}}>Booking {payment.bookingId || 'unavailable'}</strong>
+                <p style={{color: '#90a4ae', fontSize: '13px'}}>
+                  Renter: {payment.renter?.name || 'Unavailable'} ({payment.renter?.email || '—'})
+                </p>
+                <p style={{color: '#90a4ae', fontSize: '13px'}}>
+                  Owner: {payment.owner?.name || 'Unavailable'} ({payment.owner?.email || '—'}) · {payment.listing}
+                </p>
+                <p style={{color: '#90a4ae', fontSize: '13px'}}>
+                  {payment.provider} · {payment.purpose.replaceAll('_', ' ')} · {payment.currency} {(payment.amountMinor / 100).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · {payment.status}
+                </p>
+                <p style={{color: '#90a4ae', fontSize: '13px'}}>
+                  Provider reference: {payment.providerReference || 'Not assigned'} · {new Date(payment.createdAt).toLocaleString()}
+                </p>
+              </article>
+            ))}
+            </div>
+          </div>
+        )}
+
         {/* BOOKINGS TAB */}
         {activeTab === 'bookings' && (
           <div>
             <p style={{color: '#546e7a', fontSize: '13px', marginBottom: '16px'}}>
-              Showing {filteredBookings.length} bookings • Revenue: Rs. {totalRevenue}
+              Showing {filteredBookings.length} bookings • {paymentProvider === 'mock' ? 'Recorded demo income' : 'Verified income'}: LKR {(totalRevenueMinor / 100).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
               {filteredBookings.length === 0 ? (
@@ -586,9 +734,9 @@ useEffect(() => {
                         Rs. {booking.totalPrice}
                       </div>
                       <span style={{
-                        background: booking.status === 'confirmed' ? 'rgba(76,175,80,0.2)' :
+                        background: ['accepted', 'confirmed'].includes(booking.status) ? 'rgba(76,175,80,0.2)' :
                                    booking.status === 'rejected' ? 'rgba(244,67,54,0.2)' : 'rgba(255,193,7,0.2)',
-                        color: booking.status === 'confirmed' ? '#81c784' :
+                        color: ['accepted', 'confirmed'].includes(booking.status) ? '#81c784' :
                                booking.status === 'rejected' ? '#ef9a9a' : '#fff176',
                         padding: '4px 12px', borderRadius: '999px', fontSize: '12px'
                       }}>{booking.status}</span>

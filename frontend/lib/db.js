@@ -3,6 +3,7 @@ import "./models/User";
 import "./models/Item";
 import "./models/Booking";
 import "./models/Message";
+import "./models/Payment";
 
 export async function connectDB() {
   if (mongoose.connection.readyState >= 1) {
